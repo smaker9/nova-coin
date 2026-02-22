@@ -3,36 +3,34 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Nova Mining | Pay-Coins</title>
+    <title>Nova Mining | Dashboard</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <style>
-        body { font-family: sans-serif; background-color: #0b0e11; color: #e2e8f0; }
-        .glass { background: rgba(26, 28, 35, 0.9); border: 1px solid rgba(255, 255, 255, 0.05); }
-    </style>
 </head>
-<body class="p-4">
-    <div id="app-section" class="max-w-md mx-auto space-y-6">
-        <div class="glass rounded-[2rem] p-8 text-center">
-            <h1 class="text-emerald-500 font-bold mb-4">نظام تعدين NOVA</h1>
+<body class="bg-[#0b0e11] text-[#e2e8f0] p-4">
+    <div class="max-w-md mx-auto space-y-6 mt-10">
+        <div class="bg-[#1a1c23] rounded-[2rem] p-8 text-center border border-white/5">
+            <h1 class="text-emerald-500 font-bold mb-2">Dashboard</h1>
+            <p class="text-xs text-gray-500 mb-4">Manage your mining operations</p>
             <div id="balance" class="text-5xl font-mono text-emerald-400">0.000000</div>
-            <button id="miningBtn" class="w-full mt-6 bg-emerald-500 text-black font-bold py-3 rounded-xl">⚡ ابدأ التعدين</button>
+            <p class="text-[10px] text-gray-500 mt-2">NOVA Coin</p>
         </div>
 
-        <div class="glass rounded-3xl p-6">
-            <h3 class="mb-4">💳 سحب الأرباح</h3>
-            <select id="walletType" class="w-full bg-[#151921] p-3 rounded-xl mb-3 border border-gray-800">
+        <div class="bg-[#1a1c23] rounded-3xl p-6 border border-white/5">
+            <h3 class="text-sm font-bold mb-4 flex items-center">💳 Withdraw Funds</h3>
+            <select id="walletType" class="w-full bg-[#151921] p-3 rounded-xl mb-3 border border-gray-800 outline-none focus:border-emerald-500 text-sm">
+                <option value="">Select Wallet Type</option>
                 <option value="Binance">Binance (BEP-20)</option>
                 <option value="TrustWallet">Trust Wallet</option>
                 <option value="FaucetPay">FaucetPay</option>
             </select>
-            <input type="text" id="walletAddress" placeholder="عنوان المحفظة" class="w-full bg-[#151921] p-3 rounded-xl mb-4 border border-gray-800">
-            <button onclick="handleWithdraw()" class="w-full bg-blue-600 text-white font-bold py-3 rounded-xl">طلب سحب</button>
+            <input type="text" id="walletAddress" placeholder="Enter your wallet address" class="w-full bg-[#151921] p-3 rounded-xl mb-4 border border-gray-800 outline-none focus:border-emerald-500 text-sm">
+            <button onclick="handleWithdraw()" class="w-full bg-emerald-500 text-black font-bold py-3 rounded-xl hover:bg-emerald-400 transition shadow-lg">Withdraw All</button>
         </div>
     </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getFirestore, doc, setDoc, updateDoc, onSnapshot, increment } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { getFirestore, doc, setDoc, onSnapshot, increment, updateDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
         import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
         const firebaseConfig = {
@@ -48,32 +46,35 @@
         const db = getFirestore(app);
         const auth = getAuth(app);
 
-        onAuthStateChanged(auth, (user) => {
+        onAuthStateChanged(auth, async (user) => {
             if (user) {
                 const userRef = doc(db, "miners", user.uid);
-                onSnapshot(userRef, (doc) => {
-                    if(doc.exists()) document.getElementById('balance').innerText = doc.data().balance.toFixed(6);
+                onSnapshot(userRef, (docSnap) => {
+                    if(docSnap.exists()) document.getElementById('balance').innerText = docSnap.data().balance.toFixed(6);
+                    else setDoc(userRef, { balance: 0 });
                 });
                 setInterval(() => { updateDoc(userRef, { balance: increment(0.000005) }); }, 5000);
-            } else {
-                signInWithPopup(auth, new GoogleAuthProvider());
-            }
+            } else { signInWithPopup(auth, new GoogleAuthProvider()); }
         });
 
         window.handleWithdraw = async () => {
             const amount = parseFloat(document.getElementById('balance').innerText);
             const address = document.getElementById('walletAddress').value;
             const type = document.getElementById('walletType').value;
-            if(address && amount > 0) {
-                await setDoc(doc(db, "withdrawals", Date.now().toString()), {
-                    email: auth.currentUser.email,
-                    amount: amount,
-                    address: address,
-                    type: type,
-                    status: "pending"
-                });
-                alert("تم إرسال الطلب!");
+
+            if (!type || !address || amount <= 0) {
+                alert("Withdrawal Error: Please provide a valid wallet type and address.");
+                return;
             }
+
+            await setDoc(doc(db, "withdrawals", Date.now().toString()), {
+                email: auth.currentUser.email,
+                amount: amount,
+                address: address,
+                type: type,
+                status: "pending"
+            });
+            alert("Success! Your request has been sent to admin.");
         };
     </script>
 </body>
