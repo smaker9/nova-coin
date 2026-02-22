@@ -2,12 +2,12 @@
 <html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <title>إدارة السحوبات</title>
+    <title>Admin Panel | Nova</title>
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body class="bg-gray-900 text-white p-6">
-    <h1 class="text-xl font-bold mb-4">طلبات السحب المعلقة</h1>
-    <div id="requests" class="space-y-4"></div>
+<body class="bg-[#0b0e11] text-white p-6">
+    <h1 class="text-2xl font-bold mb-6 text-emerald-500 border-b border-white/10 pb-4">Pending Withdrawals</h1>
+    <div id="requests" class="grid gap-4"></div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
@@ -25,14 +25,17 @@
         onSnapshot(collection(db, "withdrawals"), (snapshot) => {
             const container = document.getElementById('requests');
             container.innerHTML = "";
-            snapshot.forEach(doc => {
-                const data = doc.data();
+            snapshot.forEach(docSnap => {
+                const data = docSnap.data();
                 container.innerHTML += `
-                    <div class="bg-gray-800 p-4 rounded-xl border border-gray-700">
-                        <p>📧 ${data.email}</p>
-                        <p class="text-emerald-400">💰 ${data.amount} NOVA</p>
-                        <p class="text-blue-400">🏦 ${data.type}</p>
-                        <p class="text-xs break-all">📍 العنوان: ${data.address}</p>
+                    <div class="bg-[#1a1c23] p-5 rounded-2xl border border-white/5 shadow-xl">
+                        <div class="flex justify-between items-start mb-2">
+                            <p class="text-sm font-bold text-gray-300">${data.email}</p>
+                            <span class="text-[10px] bg-emerald-500/10 text-emerald-500 px-2 py-1 rounded">Pending</span>
+                        </div>
+                        <div class="text-2xl font-mono text-emerald-400 mb-3">${data.amount.toFixed(4)} <span class="text-xs">NOVA</span></div>
+                        <p class="text-xs text-blue-400 mb-1 font-bold italic">Platform: ${data.type}</p>
+                        <p class="text-[10px] text-gray-500 break-all bg-black/30 p-2 rounded">Address: ${data.address}</p>
                     </div>`;
             });
         });
