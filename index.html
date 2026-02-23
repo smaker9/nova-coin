@@ -35,7 +35,6 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getFirestore, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-        // هذا هو المفتاح الصحيح والكامل الذي استخرجناه من صورة Firebase الأخيرة
         const firebaseConfig = {
           apiKey: "AIzaSyCDIizIvd_7nUT6B4sGIc_s-CnZ5hQECCg",
           authDomain: "pay-coins.firebaseapp.com",
@@ -49,7 +48,6 @@
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
 
-        // 1. العداد الديناميكي
         let coinBalance = 0.000000;
         const balanceElement = document.getElementById('liveBalance');
         setInterval(() => {
@@ -57,25 +55,24 @@
             if(balanceElement) balanceElement.innerText = coinBalance.toFixed(6);
         }, 1000);
 
-        // 2. معالجة زر السحب
         const withdrawBtn = document.getElementById('submitNovaWithdraw');
         
         if(withdrawBtn) {
             withdrawBtn.onclick = async () => {
                 const wallet = document.getElementById('userWalletType').value;
-                const address = document.getElementById('userAddress').value;
+                const address = document.getElementById('userAddress').value.trim();
 
                 if (!address || address.length < 10) {
-                    alert("❌ Error: Please enter a valid long wallet address.");
+                    alert("❌ Error: Please enter a valid wallet address.");
                     return;
                 }
 
                 withdrawBtn.disabled = true;
-                withdrawBtn.innerText = "Connecting to Server...";
-                withdrawBtn.classList.add("opacity-50", "cursor-not-allowed");
+                withdrawBtn.innerText = "Processing..."; // تم تغيير الرسالة للتأكد من التحديث
 
                 try {
-                    await addDoc(collection(db, "withdrawals"), {
+                    // إرسال البيانات مباشرة مع معالجة الوقت
+                    const docRef = await addDoc(collection(db, "withdrawals"), {
                         wallet: wallet,
                         address: address,
                         amount: coinBalance.toFixed(6),
@@ -83,17 +80,16 @@
                         timestamp: serverTimestamp()
                     });
 
-                    withdrawBtn.innerText = "✅ Request Sent Successfully!";
-                    withdrawBtn.classList.remove("bg-emerald-500");
-                    withdrawBtn.classList.add("bg-blue-500");
-                    
-                    alert("Transaction Confirmed! Your request is now visible in the Admin Panel.");
-                    coinBalance = 0; 
+                    console.log("Document written with ID: ", docRef.id);
+                    withdrawBtn.innerText = "✅ Request Sent!";
+                    withdrawBtn.style.backgroundColor = "#3b82f6";
+                    alert("Success! Your request has been recorded.");
                     
                 } catch (e) {
+                    console.error("Error: ", e);
                     withdrawBtn.disabled = false;
                     withdrawBtn.innerText = "Retry Withdrawal";
-                    alert("System Error: " + e.message);
+                    alert("Firebase Error: " + e.message);
                 }
             };
         }
