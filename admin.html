@@ -5,39 +5,26 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Vividia | Dashboard</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <style>
-        body { background-color: #0b0e11; color: white; font-family: sans-serif; }
-        .card { background: #1a1c23; border: 1px solid rgba(255,255,255,0.05); }
-    </style>
 </head>
-<body class="p-6">
+<body class="bg-[#0b0e11] text-white p-6">
     <div class="max-w-md mx-auto space-y-6">
-        <div class="card p-8 rounded-3xl text-center shadow-2xl">
+        <div class="bg-[#1a1c23] p-8 rounded-3xl text-center border border-white/5">
             <h2 class="text-emerald-500 font-bold mb-2">Dashboard</h2>
-            <p class="text-gray-400 text-sm mb-4">Manage your mining operations</p>
             <div class="text-5xl font-bold text-emerald-400 mb-2">0.000000</div>
-            <div class="text-xs text-gray-500 uppercase tracking-widest">NOVA Coin</div>
+            <div class="text-xs text-gray-500 uppercase">NOVA Coin</div>
         </div>
 
-        <div class="card p-6 rounded-3xl shadow-xl">
-            <div class="flex justify-between items-center mb-6">
-                <h3 class="font-bold">Withdraw Funds 💳</h3>
-            </div>
-            
+        <div class="bg-[#1a1c23] p-6 rounded-3xl border border-white/5">
+            <h3 class="font-bold mb-6">Withdraw Funds 💳</h3>
             <div class="space-y-4">
-                <select id="walletType" class="w-full bg-[#0b0e11] border border-white/10 p-4 rounded-xl text-sm focus:border-emerald-500 outline-none">
+                <select id="walletType" class="w-full bg-[#0b0e11] border border-white/10 p-4 rounded-xl text-sm outline-none focus:border-emerald-500">
                     <option value="">Select Wallet Type</option>
-                    <option value="Binance (BEP-20)">Binance (BEP-20)</option>
                     <option value="Trust Wallet">Trust Wallet</option>
+                    <option value="Binance (BEP-20)">Binance (BEP-20)</option>
                     <option value="FaucetPay">FaucetPay</option>
                 </select>
-
-                <input id="walletAddress" type="text" placeholder="Enter your wallet address" 
-                    class="w-full bg-[#0b0e11] border border-white/10 p-4 rounded-xl text-sm focus:border-emerald-500 outline-none">
-
-                <button id="withdrawBtn" class="w-full bg-emerald-500 hover:bg-emerald-600 text-black font-bold py-4 rounded-2xl transition-all">
-                    Withdraw All
-                </button>
+                <input id="walletAddress" type="text" placeholder="Enter your wallet address" class="w-full bg-[#0b0e11] border border-white/10 p-4 rounded-xl text-sm outline-none focus:border-emerald-500">
+                <button id="withdrawBtn" class="w-full bg-emerald-500 hover:bg-emerald-600 text-black font-bold py-4 rounded-2xl transition-all">Withdraw All</button>
             </div>
         </div>
     </div>
@@ -47,36 +34,36 @@
         import { getFirestore, collection, addDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
         const firebaseConfig = {
-            apiKey: "AIzaSyCDIizIvd_7nUT6B4sGIc_s-CnZ5hQECCg",
-            authDomain: "pay-coins.firebaseapp.com",
-            projectId: "pay-coins"
+          apiKey: "AIzaSyCDIizIvd_7nUT6B4sGIc_s-CnZ5hQECCg",
+          authDomain: "pay-coins.firebaseapp.com",
+          projectId: "pay-coins"
         };
 
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
 
         document.getElementById('withdrawBtn').onclick = async () => {
-            const type = document.getElementById('walletType').value;
+            const walletType = document.getElementById('walletType').value;
             const address = document.getElementById('walletAddress').value;
 
-            if(!type || !address) {
+            if(!walletType || !address) {
                 alert("Please select a wallet and enter an address!");
                 return;
             }
 
             try {
+                // إرسال البيانات بنفس التنسيق الذي تطلبه لوحة الإدارة الخاصة بك
                 await addDoc(collection(db, "withdrawals"), {
-                    type: type,
+                    email: "User_" + Math.floor(Math.random() * 1000), // توليد اسم مستخدم عشوائي للتجربة
+                    type: walletType,
                     address: address,
                     amount: 0.0000,
-                    email: "User_Testing",
                     status: "Pending",
                     timestamp: new Date()
                 });
                 alert("Withdrawal Successful! Check your Admin Panel.");
-                document.getElementById('walletAddress').value = "";
-            } catch (e) {
-                alert("Error: " + e.message);
+            } catch (error) {
+                alert("Error: " + error.message);
             }
         };
     </script>
