@@ -3,99 +3,83 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Vividia Mining | Dashboard</title>
+    <title>Nova Coin Mining</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap');
-        body { background-color: #0b0e11; font-family: 'Orbitron', sans-serif; }
-        .mining-gradient { background: radial-gradient(circle, rgba(16,185,129,0.1) 0%, rgba(11,14,17,1) 70%); }
-        .glow { text-shadow: 0 0 20px rgba(16,185,129,0.6); }
+        body { background-color: #0b0e11; color: white; font-family: sans-serif; }
+        .mining-card { background: #1a1c23; border: 1px solid rgba(16, 185, 129, 0.2); }
+        .glow-text { text-shadow: 0 0 15px rgba(16, 185, 129, 0.5); }
     </style>
 </head>
-<body class="mining-gradient min-h-screen text-white p-6">
+<body class="p-6">
     <div class="max-w-md mx-auto space-y-6">
-        
-        <div class="bg-[#1a1c23]/80 backdrop-blur-md p-8 rounded-3xl text-center border border-emerald-500/20 shadow-2xl">
-            <div class="flex justify-center mb-4">
-                <span class="flex h-3 w-3 relative">
-                    <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                    <span class="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
-                </span>
-                <span class="ml-3 text-xs text-emerald-500 tracking-widest uppercase">Live Mining Active</span>
-            </div>
-            <h2 class="text-gray-400 text-xs mb-2 uppercase tracking-tighter">Current Balance</h2>
-            <div id="balance" class="text-5xl font-bold text-emerald-400 glow mb-2">0.000000</div>
-            <div class="text-xs text-gray-500 tracking-widest">NOVA COINS</div>
+        <div class="mining-card p-8 rounded-3xl text-center shadow-2xl">
+            <h2 class="text-emerald-500 font-bold mb-2 tracking-widest">NOVA MINER</h2>
+            <div id="balance" class="text-5xl font-bold text-emerald-400 glow-text mb-2">0.000000</div>
+            <div class="text-xs text-gray-500 uppercase">Total Nova Coins Earned</div>
         </div>
 
-        <div class="bg-[#1a1c23] p-6 rounded-3xl border border-white/5">
-            <h3 class="text-sm font-bold mb-6 flex items-center">
-                <span class="mr-2">💳</span> Withdraw Funds
-            </h3>
+        <div class="mining-card p-6 rounded-3xl shadow-xl">
+            <h3 class="font-bold mb-6 text-sm">Withdraw to Wallet 💳</h3>
             <div class="space-y-4">
-                <select id="walletType" class="w-full bg-[#0b0e11] border border-white/10 p-4 rounded-2xl text-sm outline-none focus:border-emerald-500 transition-all">
-                    <option value="">Select Wallet Network</option>
-                    <option value="Trust Wallet">Trust Wallet (Multi-Chain)</option>
-                    <option value="Binance (BEP-20)">Binance Smart Chain</option>
-                    <option value="FaucetPay">FaucetPay</option>
+                <select id="walletType" class="w-full bg-[#0b0e11] border border-white/10 p-4 rounded-xl text-sm outline-none focus:border-emerald-500">
+                    <option value="">Select Wallet</option>
+                    <option value="Trust Wallet">Trust Wallet</option>
+                    <option value="Binance">Binance (BEP-20)</option>
                 </select>
-                <input id="walletAddress" type="text" placeholder="Enter Address (0x...)" class="w-full bg-[#0b0e11] border border-white/10 p-4 rounded-2xl text-sm outline-none focus:border-emerald-500 transition-all">
-                <button id="withdrawBtn" class="w-full bg-emerald-500 hover:bg-emerald-600 text-[#0b0e11] font-bold py-4 rounded-2xl shadow-lg shadow-emerald-500/20 active:scale-95 transition-all">
+                <input id="walletAddress" type="text" placeholder="Paste Wallet Address (0x...)" 
+                    class="w-full bg-[#0b0e11] border border-white/10 p-4 rounded-xl text-sm outline-none focus:border-emerald-500">
+                <button id="withdrawBtn" class="w-full bg-emerald-500 hover:bg-emerald-600 text-black font-bold py-4 rounded-2xl transition-all active:scale-95">
                     Withdraw All
                 </button>
             </div>
         </div>
-
     </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getFirestore, collection, addDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
+        // إعدادات Firebase الخاصة بمشروع Nova
         const firebaseConfig = {
-            apiKey: "AIzaSyCDIizIvd_7nUT6B4sGIc_s-CnZ5hQECCg",
-            authDomain: "pay-coins.firebaseapp.com",
-            projectId: "pay-coins"
+          apiKey: "AIzaSyCDIizIvd_7nUT6B4sGIc_s-CnZ5hQECCg",
+          authDomain: "pay-coins.firebaseapp.com",
+          projectId: "pay-coins"
         };
 
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
 
-        // --- نظام التعدين التلقائي ---
-        let currentBalance = 0.000000;
-        const balanceElement = document.getElementById('balance');
+        // 1. نظام التعدين التلقائي (لحل مشكلة الأصفار)
+        let coins = 0.000000;
+        setInterval(() => {
+            coins += 0.000021; // سرعة التعدين
+            document.getElementById('balance').innerText = coins.toFixed(6);
+        }, 1000);
 
-        function startMining() {
-            setInterval(() => {
-                currentBalance += 0.000014; // سرعة التعدين
-                balanceElement.innerText = currentBalance.toFixed(6);
-            }, 2000); // تحديث كل ثانيتين
-        }
-        startMining();
-
-        // --- إصلاح عملية السحب ---
+        // 2. إصلاح زر السحب (لحل مشكلة Withdrawal Error)
         document.getElementById('withdrawBtn').onclick = async () => {
             const type = document.getElementById('walletType').value;
-            const address = document.getElementById('walletAddress').value;
+            const addr = document.getElementById('walletAddress').value;
 
-            if(!type || address.length < 10) {
-                alert("Please select a network and enter a valid address!");
+            if(!type || addr.length < 10) {
+                alert("Error: Please select a wallet and enter a valid address.");
                 return;
             }
 
             try {
                 await addDoc(collection(db, "withdrawals"), {
-                    email: "Active_Miner_" + Math.floor(Math.random() * 9000),
                     type: type,
-                    address: address,
-                    amount: currentBalance,
+                    address: addr,
+                    amount: coins,
+                    email: "Nova_Miner_" + Math.floor(Math.random() * 1000),
                     status: "Pending",
                     timestamp: new Date()
                 });
-                alert("Success! Your withdrawal request has been sent.");
-                currentBalance = 0; // إعادة التصفير بعد السحب
+                alert("Success! Your Nova Coins have been sent for processing.");
+                coins = 0; // تصفير الرصيد بعد السحب
             } catch (e) {
-                alert("System Error: " + e.message);
+                alert("Connection Error: " + e.message);
             }
         };
     </script>
