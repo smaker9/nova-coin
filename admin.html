@@ -3,33 +3,27 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Nova Coin Mining</title>
+    <title>Nova Coin | Real-Time Mining</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <style>
-        body { background-color: #0b0e11; color: white; font-family: sans-serif; }
-        .mining-card { background: #1a1c23; border: 1px solid rgba(16, 185, 129, 0.2); }
-        .glow-text { text-shadow: 0 0 15px rgba(16, 185, 129, 0.5); }
-    </style>
 </head>
-<body class="p-6">
+<body class="bg-[#0b0e11] text-white p-6 font-sans">
     <div class="max-w-md mx-auto space-y-6">
-        <div class="mining-card p-8 rounded-3xl text-center shadow-2xl">
-            <h2 class="text-emerald-500 font-bold mb-2 tracking-widest">NOVA MINER</h2>
-            <div id="balance" class="text-5xl font-bold text-emerald-400 glow-text mb-2">0.000000</div>
-            <div class="text-xs text-gray-500 uppercase">Total Nova Coins Earned</div>
+        <div class="bg-[#1a1c23] p-8 rounded-3xl text-center border border-emerald-500/30 shadow-2xl">
+            <h2 class="text-emerald-500 font-bold mb-2 uppercase tracking-widest">Nova Cloud Miner</h2>
+            <div id="balanceDisplay" class="text-5xl font-bold text-emerald-400 mb-2">0.000000</div>
+            <div class="text-[10px] text-gray-500 uppercase tracking-widest">Live Dynamic Balance</div>
         </div>
 
-        <div class="mining-card p-6 rounded-3xl shadow-xl">
-            <h3 class="font-bold mb-6 text-sm">Withdraw to Wallet 💳</h3>
+        <div class="bg-[#1a1c23] p-6 rounded-3xl border border-white/5">
+            <h3 class="text-sm font-bold mb-6">Request Payout</h3>
             <div class="space-y-4">
                 <select id="walletType" class="w-full bg-[#0b0e11] border border-white/10 p-4 rounded-xl text-sm outline-none focus:border-emerald-500">
-                    <option value="">Select Wallet</option>
+                    <option value="">Select Network</option>
                     <option value="Trust Wallet">Trust Wallet</option>
-                    <option value="Binance">Binance (BEP-20)</option>
+                    <option value="Binance (BEP-20)">Binance Smart Chain</option>
                 </select>
-                <input id="walletAddress" type="text" placeholder="Paste Wallet Address (0x...)" 
-                    class="w-full bg-[#0b0e11] border border-white/10 p-4 rounded-xl text-sm outline-none focus:border-emerald-500">
-                <button id="withdrawBtn" class="w-full bg-emerald-500 hover:bg-emerald-600 text-black font-bold py-4 rounded-2xl transition-all active:scale-95">
+                <input id="walletAddress" type="text" placeholder="Address (0x...)" class="w-full bg-[#0b0e11] border border-white/10 p-4 rounded-xl text-sm outline-none focus:border-emerald-500">
+                <button id="withdrawBtn" class="w-full bg-emerald-500 hover:bg-emerald-600 text-black font-bold py-4 rounded-2xl transition-all">
                     Withdraw All
                 </button>
             </div>
@@ -38,48 +32,72 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getFirestore, collection, addDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { getFirestore, doc, getDoc, setDoc, updateDoc, collection, addDoc, increment } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-        // إعدادات Firebase الخاصة بمشروع Nova
         const firebaseConfig = {
-          apiKey: "AIzaSyCDIizIvd_7nUT6B4sGIc_s-CnZ5hQECCg",
-          authDomain: "pay-coins.firebaseapp.com",
-          projectId: "pay-coins"
+            apiKey: "AIzaSyCDIizIvd_7nUT6B4sGIc_s-CnZ5hQECCg",
+            authDomain: "pay-coins.firebaseapp.com",
+            projectId: "pay-coins"
         };
 
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
 
-        // 1. نظام التعدين التلقائي (لحل مشكلة الأصفار)
-        let coins = 0.000000;
-        setInterval(() => {
-            coins += 0.000021; // سرعة التعدين
-            document.getElementById('balance').innerText = coins.toFixed(6);
-        }, 1000);
+        // معرف افتراضي للمستخدم (يمكن تغييره لاحقاً لنظام تسجيل دخول)
+        const userDocRef = doc(db, "users", "test_miner_01");
 
-        // 2. إصلاح زر السحب (لحل مشكلة Withdrawal Error)
+        // 1. نظام التعدين الديناميكي الواقعي
+        async function initMining() {
+            let userDoc = await getDoc(userDocRef);
+            if (!userDoc.exists()) {
+                await setDoc(userDocRef, { balance: 0.000000 });
+            }
+
+            // تحديث الرصيد في قاعدة البيانات كل 5 ثوانٍ (واقعي)
+            setInterval(async () => {
+                await updateDoc(userDocRef, {
+                    balance: increment(0.000015)
+                });
+                // جلب الرصيد المحدث من السيرفر وعرضه
+                const updatedDoc = await getDoc(userDocRef);
+                document.getElementById('balanceDisplay').innerText = updatedDoc.data().balance.toFixed(6);
+            }, 5000);
+        }
+
+        initMining();
+
+        // 2. معالجة طلب السحب الواقعي
         document.getElementById('withdrawBtn').onclick = async () => {
             const type = document.getElementById('walletType').value;
             const addr = document.getElementById('walletAddress').value;
+            const currentDoc = await getDoc(userDocRef);
+            const currentBalance = currentDoc.data().balance;
 
             if(!type || addr.length < 10) {
-                alert("Error: Please select a wallet and enter a valid address.");
+                alert("Please select a wallet and enter a valid address.");
+                return;
+            }
+
+            if(currentBalance <= 0) {
+                alert("Insufficient balance for withdrawal.");
                 return;
             }
 
             try {
+                // إرسال طلب السحب إلى مجموعة withdrawals
                 await addDoc(collection(db, "withdrawals"), {
                     type: type,
                     address: addr,
-                    amount: coins,
-                    email: "Nova_Miner_" + Math.floor(Math.random() * 1000),
-                    status: "Pending",
-                    timestamp: new Date()
+                    amount: currentBalance,
+                    timestamp: new Date(),
+                    status: "Pending"
                 });
-                alert("Success! Your Nova Coins have been sent for processing.");
-                coins = 0; // تصفير الرصيد بعد السحب
+
+                // تصفير الرصيد في قاعدة البيانات بعد السحب
+                await updateDoc(userDocRef, { balance: 0 });
+                alert("Withdrawal submitted successfully!");
             } catch (e) {
-                alert("Connection Error: " + e.message);
+                alert("Database Error: " + e.message);
             }
         };
     </script>
