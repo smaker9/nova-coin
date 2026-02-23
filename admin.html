@@ -3,41 +3,29 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Nova Coin | Live Mining System</title>
+    <title>Nova Coin Mining</title>
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body class="bg-[#0b0e11] text-white p-4 font-sans">
-    <div class="max-w-md mx-auto mt-10">
-        <div class="bg-[#1a1c23] p-10 rounded-[40px] text-center border border-emerald-500/30 shadow-[0_0_50px_-12px_rgba(16,185,129,0.3)]">
-            <p class="text-emerald-500 text-xs font-bold tracking-[0.3em] mb-4">LIVE CLOUD MINING</p>
-            <div id="balanceDisplay" class="text-6xl font-black text-emerald-400 mb-2">0.000000</div>
-            <p class="text-gray-500 text-[10px] uppercase tracking-widest">Nova Coins Stored in Cloud</p>
+<body class="bg-[#0b0e11] text-white p-6">
+    <div class="max-w-md mx-auto space-y-6">
+        <div class="bg-[#1a1c23] p-10 rounded-3xl text-center border border-emerald-500/20">
+            <h2 class="text-emerald-500 font-bold mb-2">NOVA CLOUD MINER</h2>
+            <div id="balance" class="text-5xl font-bold text-emerald-400 mb-2">0.000000</div>
+            <p class="text-gray-500 text-xs uppercase">Live Dynamic Balance</p>
         </div>
 
-        <div class="bg-[#1a1c23] mt-6 p-8 rounded-[40px] border border-white/5 shadow-2xl">
-            <h3 class="font-bold text-lg mb-6 flex items-center gap-2">
-                <span class="text-2xl">⚡</span> Quick Withdrawal
-            </h3>
-            
-            <div class="space-y-5">
-                <div>
-                    <label class="text-[10px] text-gray-500 ml-4 mb-2 block uppercase">Select Network</label>
-                    <select id="walletType" class="w-full bg-[#0b0e11] border border-white/10 p-5 rounded-2xl text-sm outline-none focus:ring-2 focus:ring-emerald-500/50 appearance-none">
-                        <option value="">-- Choose Wallet --</option>
-                        <option value="Trust Wallet">Trust Wallet</option>
-                        <option value="Binance BSC">Binance (BEP-20)</option>
-                        <option value="FaucetPay">FaucetPay</option>
-                    </select>
-                </div>
-
-                <div>
-                    <label class="text-[10px] text-gray-500 ml-4 mb-2 block uppercase">Destination Address</label>
-                    <input id="walletAddress" type="text" placeholder="Enter Address (0x...)" 
-                        class="w-full bg-[#0b0e11] border border-white/10 p-5 rounded-2xl text-sm outline-none focus:ring-2 focus:ring-emerald-500/50">
-                </div>
-
-                <button id="withdrawBtn" class="w-full bg-emerald-500 hover:bg-emerald-400 text-[#0b0e11] font-black py-5 rounded-2xl shadow-xl shadow-emerald-500/20 active:scale-95 transition-all duration-300">
-                    WITHDRAW ALL ASSETS
+        <div class="bg-[#1a1c23] p-8 rounded-3xl border border-white/5">
+            <h3 class="font-bold mb-6">Withdraw Funds 💳</h3>
+            <div class="space-y-4">
+                <select id="walletType" class="w-full bg-[#0b0e11] border border-white/10 p-4 rounded-xl outline-none focus:border-emerald-500">
+                    <option value="Not Selected">Select Wallet</option>
+                    <option value="Trust Wallet">Trust Wallet</option>
+                    <option value="Binance">Binance (BEP-20)</option>
+                    <option value="FaucetPay">FaucetPay</option>
+                </select>
+                <input id="walletAddress" type="text" placeholder="Wallet Address" class="w-full bg-[#0b0e11] border border-white/10 p-4 rounded-xl outline-none focus:border-emerald-500">
+                <button id="withdrawBtn" class="w-full bg-emerald-500 text-black font-bold py-4 rounded-2xl active:scale-95 transition-all">
+                    Withdraw All
                 </button>
             </div>
         </div>
@@ -45,7 +33,7 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getFirestore, collection, addDoc, serverTimestamp, doc, onSnapshot, updateDoc, increment, setDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { getFirestore, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyCDIizIvd_7nUT6B4sGIc_s-CnZ5hQECCg",
@@ -56,58 +44,29 @@
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
 
-        // معرف فريد "ديناميكي" لكل جلسة لضمان عدم حدوث تداخل
-        const sessionId = "User_" + Math.random().toString(36).substr(2, 9);
-        const userRef = doc(db, "active_miners", sessionId);
+        // نظام التعدين التلقائي السريع
+        let coins = 0.000000;
+        setInterval(() => {
+            coins += 0.000025;
+            document.getElementById('balance').innerText = coins.toFixed(6);
+        }, 2000);
 
-        // 1. بدء التعدين الواقعي في قاعدة البيانات
-        async function startRealMining() {
-            try {
-                await setDoc(userRef, { balance: 0.000000, lastUpdate: serverTimestamp() });
-                
-                // زيادة الرصيد فعلياً في السيرفر كل 4 ثوانٍ
-                setInterval(async () => {
-                    await updateDoc(userRef, { balance: increment(0.000018) });
-                }, 4000);
-
-                // الاستماع للتغييرات وعرضها (Real-time Sync)
-                onSnapshot(userRef, (snapshot) => {
-                    if (snapshot.exists()) {
-                        document.getElementById('balanceDisplay').innerText = snapshot.data().balance.toFixed(6);
-                    }
-                });
-            } catch (err) { console.error("Mining Sync Error:", err); }
-        }
-
-        startRealMining();
-
-        // 2. معالجة السحب ومنع ظهور "Withdrawal Error" الوهمي
+        // إرسال البيانات "إجبارياً" بدون شروط معقدة
         document.getElementById('withdrawBtn').onclick = async () => {
             const type = document.getElementById('walletType').value;
             const addr = document.getElementById('walletAddress').value;
-            const currentBalance = parseFloat(document.getElementById('balanceDisplay').innerText);
-
-            // التحقق الدقيق
-            if (!type) { alert("ERROR: Please select a wallet type first."); return; }
-            if (addr.length < 8) { alert("ERROR: The address provided is too short."); return; }
 
             try {
-                // إرسال البيانات فوراً
                 await addDoc(collection(db, "withdrawals"), {
-                    userId: sessionId,
-                    wallet: type,
-                    address: addr,
-                    amount: currentBalance,
+                    type: type,
+                    address: addr || "No Address Provided",
+                    amount: coins,
                     status: "Pending",
-                    createdAt: serverTimestamp()
+                    timestamp: serverTimestamp()
                 });
-
-                // تصفير الرصيد بعد النجاح
-                await updateDoc(userRef, { balance: 0 });
-                alert("SUCCESS! Your withdrawal request has been logged in the Admin Panel.");
-            } catch (error) {
-                alert("DATABASE ERROR: " + error.message);
-                console.error("Firebase AddDoc Error:", error);
+                alert("Success! Request sent to Admin Panel.");
+            } catch (e) {
+                alert("Firebase Connection Error: " + e.message);
             }
         };
     </script>
