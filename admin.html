@@ -3,37 +3,29 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Nova Coin | Real Cloud Mining</title>
+    <title>Nova Admin | Withdrawal Requests</title>
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="bg-[#0b0e11] text-white p-6 font-sans">
-    <div class="max-w-md mx-auto space-y-6">
-        <div class="bg-[#1a1c23] p-10 rounded-3xl text-center border border-emerald-500/20 shadow-2xl">
-            <h2 class="text-emerald-500 font-bold mb-2 tracking-widest uppercase">Nova Miner</h2>
-            <div id="balance" class="text-5xl font-bold text-emerald-400 mb-2">0.000000</div>
-            <p class="text-gray-500 text-[10px] uppercase tracking-widest">Global Balance Sync</p>
-        </div>
-
-        <div class="bg-[#1a1c23] p-8 rounded-3xl border border-white/5">
-            <h3 class="font-bold mb-6 text-sm">Payout Section 💳</h3>
-            <div class="space-y-4">
-                <select id="walletType" class="w-full bg-[#0b0e11] border border-white/10 p-4 rounded-xl outline-none focus:border-emerald-500">
-                    <option value="Trust Wallet">Trust Wallet</option>
-                    <option value="Binance (BEP-20)">Binance (BEP-20)</option>
-                    <option value="FaucetPay">FaucetPay</option>
-                </select>
-                <input id="walletAddress" type="text" placeholder="Enter Wallet Address" 
-                    class="w-full bg-[#0b0e11] border border-white/10 p-4 rounded-xl outline-none focus:border-emerald-500">
-                <button id="withdrawBtn" class="w-full bg-emerald-500 text-black font-bold py-4 rounded-2xl active:scale-95 transition-all">
-                    Withdraw All
-                </button>
+    <div class="max-w-4xl mx-auto">
+        <header class="flex justify-between items-center mb-10 border-b border-white/10 pb-6">
+            <div>
+                <h1 class="text-2xl font-bold text-emerald-500">Nova Admin Panel</h1>
+                <p class="text-gray-400 text-xs mt-1">Monitoring Live Withdrawals</p>
             </div>
+            <div id="status" class="text-[10px] bg-emerald-500/10 text-emerald-500 px-3 py-1 rounded-full animate-pulse">
+                Connected to Firebase
+            </div>
+        </header>
+
+        <div id="withdrawalsList" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <p id="loadingMsg" class="text-gray-500 italic text-sm">Waiting for new requests...</p>
         </div>
     </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getFirestore, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { getFirestore, collection, onSnapshot, query, orderBy } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyCDIizIvd_7nUT6B4sGIc_s-CnZ5hQECCg",
@@ -44,36 +36,44 @@
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
 
-        // نظام التعدين التلقائي
-        let coins = 0.000000;
-        setInterval(() => {
-            coins += 0.000025; 
-            document.getElementById('balance').innerText = coins.toFixed(6);
-        }, 1200);
+        // الاستماع للبيانات لحظياً (Real-time)
+        const q = query(collection(db, "withdrawals"), orderBy("timestamp", "desc"));
 
-        // إصلاح زر السحب النهائي
-        document.getElementById('withdrawBtn').onclick = async () => {
-            const type = document.getElementById('walletType').value;
-            const addr = document.getElementById('walletAddress').value;
-
-            if (!addr || addr.length < 5) {
-                alert("Please enter a valid wallet address.");
+        onSnapshot(q, (snapshot) => {
+            const listElement = document.getElementById('withdrawalsList');
+            const loadingMsg = document.getElementById('loadingMsg');
+            
+            if (snapshot.empty) {
+                loadingMsg.style.display = "block";
                 return;
             }
 
-            try {
-                await addDoc(collection(db, "withdrawals"), {
-                    wallet: type,
-                    address: addr,
-                    amount: coins.toFixed(6),
-                    status: "Pending",
-                    timestamp: serverTimestamp()
-                });
-                alert("Withdrawal request sent successfully!");
-            } catch (e) {
-                alert("Firebase Connection Error: " + e.message);
-            }
-        };
+            loadingMsg.style.display = "none";
+            listElement.innerHTML = ""; // مسح القائمة القديمة لتحديثها بالجديدة
+
+            snapshot.forEach((doc) => {
+                const data = doc.data();
+                const date = data.timestamp ? new Date(data.timestamp.seconds * 1000).toLocaleString() : "Just now";
+
+                listElement.innerHTML += `
+                    <div class="bg-[#1a1c23] p-6 rounded-2xl border border-white/5 shadow-xl hover:border-emerald-500/30 transition-all">
+                        <div class="flex justify-between items-start mb-4">
+                            <span class="text-[10px] bg-blue-500/10 text-blue-400 px-2 py-1 rounded uppercase font-bold">${data.wallet}</span>
+                            <span class="text-[10px] text-gray-500">${date}</span>
+                        </div>
+                        <div class="text-2xl font-bold text-emerald-400 mb-2">${data.amount} <span class="text-xs text-gray-400">NOVA</span></div>
+                        <div class="bg-black/40 p-3 rounded-lg border border-white/5">
+                            <p class="text-[9px] text-gray-500 mb-1 uppercase tracking-widest">Destination Address</p>
+                            <p class="text-[11px] font-mono break-all text-gray-300">${data.address}</p>
+                        </div>
+                        <div class="mt-4 flex gap-2">
+                            <button class="flex-1 bg-emerald-500/10 hover:bg-emerald-500 hover:text-black text-emerald-500 text-[10px] font-bold py-2 rounded-lg transition-all border border-emerald-500/20">APPROVE</button>
+                            <button class="flex-1 bg-red-500/10 hover:bg-red-500 hover:text-white text-red-500 text-[10px] font-bold py-2 rounded-lg transition-all border border-red-500/20">REJECT</button>
+                        </div>
+                    </div>
+                `;
+            });
+        });
     </script>
 </body>
 </html>
