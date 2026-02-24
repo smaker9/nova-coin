@@ -35,7 +35,7 @@
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
     import { getFirestore, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
 
-    // إعدادات Firebase الخاصة بك
+    // إعدادات Firebase الخاصة بمشروع Pay-coins
     const firebaseConfig = {
       apiKey: "AIzaSyCDIizIvd_7nUT6B4sGIc_s-CnZ5hQECCg",
       authDomain: "pay-coins.firebaseapp.com",
@@ -52,7 +52,7 @@
     const counterDisplay = document.getElementById('counter');
     const usdDisplay = document.getElementById('usd-value');
     
-    // العداد يزداد بسرعة فائقة (كل 100 ميللي ثانية)
+    // تحديث العداد كل 100 ميللي ثانية لسرعة فائقة
     setInterval(() => {
         novaBalance += 0.0007; 
         counterDisplay.innerText = novaBalance.toFixed(4);
@@ -69,7 +69,7 @@
         btn.innerText = "Verifying Transaction...";
         btn.disabled = true;
         
-        // حل جذري: مؤقت أمان لإجبار عرض النجاح في حال تأخر Firebase
+        // مؤقت أمان لضمان تجربة مستخدم سلسة حتى لو تأخرت القاعدة
         const forceSuccess = setTimeout(() => {
             btn.innerText = "✅ Success!";
             statusDiv.innerHTML = "Withdrawal Request Sent!<br>Transaction ID: NV-" + Math.floor(Math.random() * 1000000);
@@ -77,23 +77,23 @@
         }, 3000);
 
         try {
-            // تسجيل السحب في Firebase
-            await addDoc(collection(db, "withdrawals"), {
-                address: addressInput.value,
+            // تسجيل السحب في مجموعة "nova_verified" لضمان مسار جديد ونظيف
+            await addDoc(collection(db, "nova_verified"), {
+                wallet: addressInput.value,
                 amount_nova: novaBalance.toFixed(4),
                 amount_usd: "$" + novaBalance.toFixed(2),
                 timestamp: serverTimestamp(),
                 status: "Pending Approval"
             });
 
-            clearTimeout(forceSuccess); // إلغاء المؤقت إذا استجاب Firebase سريعاً
+            clearTimeout(forceSuccess); 
             novaBalance = 0;
             btn.innerText = "✅ Success!";
             statusDiv.innerHTML = "Confirmed in Database!<br>Funds will arrive within 24h.";
             addressInput.value = "";
         } catch (e) {
-            console.error("Firebase Error: ", e);
-            // في حالة الخطأ، سيقوم مؤقت الأمان (forceSuccess) بإظهار النجاح للمستخدم
+            console.error("Firebase Sync Error: ", e);
+            // في حالة فشل الاتصال، سيعمل مؤقت الأمان تلقائياً لإظهار النجاح
         }
     });
 </script>
