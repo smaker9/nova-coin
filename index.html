@@ -19,16 +19,15 @@
     <button id="withdraw-btn">Withdraw All</button>
 
     <script type="module">
-        // استدعاء النسخ المستقرة لضمان التوافق
         import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
         import { getFirestore, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
 
-        // بيانات مشروع pay-coins المأخوذة من إعداداتك
+        // إعدادات Firebase المحدثة من صورك
         const firebaseConfig = {
           apiKey: "AIzaSyCDIizIvd_7nUT6B4sGIc_s-CnZ5hQECCg",
           authDomain: "pay-coins.firebaseapp.com",
           projectId: "pay-coins",
-          storageBucket: "pay-coins.appspot.com",
+          storageBucket: "pay-coins.firebasestorage.app", // تم تحديث الرابط هنا
           messagingSenderId: "279908586614",
           appId: "1:279908586614:web:632ce326f8b3a0e0e47b57",
           measurementId: "G-SG3W4FH9DC"
@@ -46,7 +45,7 @@
             btn.disabled = true;
 
             try {
-                // الربط المباشر مع مجموعة withdrawals
+                // الربط مع مجموعة withdrawals التي ظهرت في صورك
                 await addDoc(collection(db, "withdrawals"), {
                     wallet: addressInput.value,
                     timestamp: serverTimestamp()
@@ -57,7 +56,7 @@
                 addressInput.value = "";
             } catch (error) {
                 console.error(error);
-                alert("Error: " + error.code);
+                alert("Firebase Error: " + error.code);
                 btn.innerText = "Withdraw All";
                 btn.disabled = false;
             }
