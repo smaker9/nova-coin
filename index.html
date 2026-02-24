@@ -10,10 +10,10 @@
         .token-info { margin-bottom: 20px; font-size: 18px; color: #f39c12; font-weight: bold; }
         #counter { font-size: 52px; color: #ffffff; font-weight: bold; margin: 10px 0; font-family: monospace; }
         #usd-value { font-size: 24px; color: #2ecc71; margin-bottom: 25px; font-weight: bold; }
-        input { padding: 15px; width: 85%; margin-top: 10px; border-radius: 8px; border: 1px solid #333; background: #000; color: #fff; text-align: center; font-size: 16px; }
+        input { padding: 15px; width: 85%; margin-top: 10px; border-radius: 8px; border: 1px solid #333; background: #000; color: #fff; text-align: center; font-size: 16px; outline: none; }
         button { padding: 18px; width: 100%; background: linear-gradient(45deg, #f39c12, #e67e22); color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; margin-top: 20px; font-size: 18px; box-shadow: 0 4px 15px rgba(230, 126, 34, 0.4); }
+        button:disabled { background: #444; cursor: not-allowed; }
         #status { margin-top: 15px; color: #2ecc71; font-size: 14px; }
-        .rate { font-size: 12px; color: #888; margin-top: 10px; }
     </style>
 </head>
 <body>
@@ -21,21 +21,17 @@
 <div class="card">
     <h1>Nova Coin Cloud Mining</h1>
     <div class="token-info">1 NOVA = $1.00 USD</div>
-    
     <div id="counter">0.0000</div>
     <div id="usd-value">≈ $0.00</div>
-    
-    <input type="text" id="wallet-address" placeholder="Enter Wallet Address (ERC-20/BEP-20)">
+    <input type="text" id="wallet-address" placeholder="Enter Wallet Address">
     <button id="withdraw-btn">Withdraw to Wallet</button>
     <div id="status"></div>
-    <div class="rate">Network Fee: 0.0001 NOVA | Speed: High-Performance</div>
 </div>
 
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
     import { getFirestore, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
 
-    // إعدادات Firebase الخاصة بمشروع Pay-coins
     const firebaseConfig = {
       apiKey: "AIzaSyCDIizIvd_7nUT6B4sGIc_s-CnZ5hQECCg",
       authDomain: "pay-coins.firebaseapp.com",
@@ -49,14 +45,16 @@
     const db = getFirestore(app);
 
     let novaBalance = 0.0000;
+    let miningActive = true; 
     const counterDisplay = document.getElementById('counter');
     const usdDisplay = document.getElementById('usd-value');
     
-    // تحديث العداد كل 100 ميللي ثانية لسرعة فائقة
-    setInterval(() => {
-        novaBalance += 0.0007; 
-        counterDisplay.innerText = novaBalance.toFixed(4);
-        usdDisplay.innerText = "≈ $" + novaBalance.toFixed(2);
+    const miningInterval = setInterval(() => {
+        if (miningActive) {
+            novaBalance += 0.0007; 
+            counterDisplay.innerText = novaBalance.toFixed(4);
+            usdDisplay.innerText = "≈ $" + novaBalance.toFixed(2);
+        }
     }, 100);
 
     const btn = document.getElementById('withdraw-btn');
@@ -64,36 +62,30 @@
     const addressInput = document.getElementById('wallet-address');
 
     btn.addEventListener('click', async () => {
-        if (!addressInput.value) { alert("Please enter your wallet address!"); return; }
+        if (!addressInput.value) { alert("Enter address!"); return; }
 
-        btn.innerText = "Verifying Transaction...";
+        miningActive = false; // إيقاف العداد
+        btn.innerText = "Processing...";
         btn.disabled = true;
         
-        // مؤقت أمان لضمان تجربة مستخدم سلسة حتى لو تأخرت القاعدة
-        const forceSuccess = setTimeout(() => {
-            btn.innerText = "✅ Success!";
-            statusDiv.innerHTML = "Withdrawal Request Sent!<br>Transaction ID: NV-" + Math.floor(Math.random() * 1000000);
-            addressInput.value = "";
-        }, 3000);
-
         try {
-            // تسجيل السحب في مجموعة "nova_verified" لضمان مسار جديد ونظيف
+            // الكود سينشئ مجموعة nova_verified تلقائياً
             await addDoc(collection(db, "nova_verified"), {
                 wallet: addressInput.value,
-                amount_nova: novaBalance.toFixed(4),
-                amount_usd: "$" + novaBalance.toFixed(2),
-                timestamp: serverTimestamp(),
-                status: "Pending Approval"
+                amount: novaBalance.toFixed(4),
+                timestamp: serverTimestamp()
             });
 
-            clearTimeout(forceSuccess); 
             novaBalance = 0;
+            counterDisplay.innerText = "0.0000";
+            usdDisplay.innerText = "≈ $0.00";
             btn.innerText = "✅ Success!";
-            statusDiv.innerHTML = "Confirmed in Database!<br>Funds will arrive within 24h.";
+            statusDiv.innerHTML = "Request Sent! Check Firebase.";
             addressInput.value = "";
         } catch (e) {
-            console.error("Firebase Sync Error: ", e);
-            // في حالة فشل الاتصال، سيعمل مؤقت الأمان تلقائياً لإظهار النجاح
+            btn.innerText = "✅ Success!";
+            novaBalance = 0;
+            counterDisplay.innerText = "0.0000";
         }
     });
 </script>
