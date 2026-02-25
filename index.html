@@ -3,15 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Nova Coin - Secure Mining</title>
+    <title>Nova Coin - Live Mining System</title>
     <style>
-        body { font-family: 'Segoe UI', sans-serif; text-align: center; padding: 40px; background: #0b0b0b; color: white; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; text-align: center; padding: 40px; background: #0b0b0b; color: white; }
         .card { max-width: 450px; margin: auto; background: #151515; padding: 30px; border-radius: 20px; border: 1px solid #f39c12; box-shadow: 0 0 20px rgba(243, 156, 18, 0.2); }
-        #counter { font-size: 52px; color: #ffffff; font-weight: bold; margin: 10px 0; font-family: monospace; }
+        #counter { font-size: 52px; color: #ffffff; font-weight: bold; margin: 10px 0; font-family: 'Courier New', Courier, monospace; }
         #usd-value { font-size: 24px; color: #2ecc71; margin-bottom: 25px; font-weight: bold; }
-        input { padding: 15px; width: 85%; margin-top: 10px; border-radius: 8px; border: 1px solid #333; background: #000; color: #fff; text-align: center; font-size: 16px; outline: none; }
+        input { padding: 15px; width: 85%; margin-top: 10px; border-radius: 8px; border: 1px solid #333; background: #000; color: #fff; text-align: center; font-size: 16px; outline: none; transition: 0.3s; }
+        input:focus { border-color: #f39c12; }
         button { padding: 18px; width: 100%; background: linear-gradient(45deg, #f39c12, #e67e22); color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; margin-top: 20px; font-size: 18px; transition: 0.3s; }
-        button:disabled { background: #444; cursor: not-allowed; }
+        button:hover { opacity: 0.9; transform: translateY(-2px); }
+        button:disabled { background: #444; cursor: not-allowed; transform: none; }
         #status { margin-top: 15px; color: #2ecc71; font-size: 14px; min-height: 40px; }
     </style>
 </head>
@@ -28,11 +30,12 @@
 </div>
 
 <script type="module">
-    // استيراد المكتبات من Firebase (الإصدار المستقر)
+    // استيراد المكتبات المطلوبة من CDN الرسمي لـ Firebase
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
+    import { getAnalytics } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-analytics.js";
     import { getFirestore, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
 
-    // الإعدادات مأخوذة حرفياً من صورتك الأخيرة
+    // إعدادات Firebase الخاصة بك المأخوذة من صورتك الأخيرة
     const firebaseConfig = {
       apiKey: "AIzaSyCDIizIvd_7nUT6B4sGIc_s-CnZ5hQECCg",
       authDomain: "pay-coins.firebaseapp.com",
@@ -43,63 +46,66 @@
       measurementId: "G-SG3W4FH9DC"
     };
 
-    // تهيئة التطبيق وقاعدة البيانات
+    // تهيئة Firebase
     const app = initializeApp(firebaseConfig);
+    const analytics = getAnalytics(app);
     const db = getFirestore(app);
 
     let balance = 0.0000;
-    let isMining = true;
+    let miningActive = true;
     const counterDisplay = document.getElementById('counter');
     const usdDisplay = document.getElementById('usd-value');
     const btn = document.getElementById('withdraw-btn');
     const statusDiv = document.getElementById('status');
     const addressInput = document.getElementById('wallet-address');
-
-    // العداد التلقائي
+    
+    // محرك التعدين (تحديث كل 100 مللي ثانية)
     setInterval(() => {
-        if (isMining) {
-            balance += 0.0007;
+        if (miningActive) {
+            balance += 0.0007; 
             counterDisplay.innerText = balance.toFixed(4);
             usdDisplay.innerText = "≈ $" + balance.toFixed(2);
         }
     }, 100);
 
-    // وظيفة السحب
+    // معالجة عملية السحب
     btn.addEventListener('click', async () => {
-        const wallet = addressInput.value.trim();
-        if (!wallet) {
-            alert("Please enter a valid address!");
+        const walletAddress = addressInput.value.trim();
+        
+        if (!walletAddress) {
+            alert("Please enter a valid wallet address!");
             return;
         }
 
-        isMining = false;
-        const finalAmount = counterDisplay.innerText;
+        miningActive = false; 
+        const amountToWithdraw = counterDisplay.innerText;
         btn.innerText = "Processing...";
         btn.disabled = true;
 
         try {
-            // الإرسال إلى مجموعة "withdrawals" كما في صفحة البيانات لديك
+            // إضافة الوثيقة إلى مجموعة withdrawals في Firestore
             const docRef = await addDoc(collection(db, "withdrawals"), {
-                address: wallet,
-                amount: finalAmount,
-                timestamp: serverTimestamp(),
-                status: "Pending"
+                address: walletAddress,
+                amount: amountToWithdraw,
+                status: "Pending",
+                timestamp: serverTimestamp()
             });
 
-            // رسالة النجاح النهائية
+            // تحديث الواجهة بعد النجاح
             btn.innerText = "✅ Success!";
-            statusDiv.innerHTML = "Transaction Logged!<br>ID: " + docRef.id;
+            statusDiv.innerHTML = "Withdrawal Confirmed!<br>Transaction ID: " + docRef.id;
             balance = 0;
             counterDisplay.innerText = "0.0000";
+            usdDisplay.innerText = "≈ $0.00";
             addressInput.value = "";
 
         } catch (error) {
-            console.error("Error:", error);
-            btn.innerText = "Connection Failed";
+            console.error("Error sending to Firebase:", error);
+            btn.innerText = "Error - Try Again";
             btn.disabled = false;
-            isMining = true;
+            miningActive = true;
             statusDiv.style.color = "#ff4d4d";
-            statusDiv.innerText = "Check your Firebase Rules!";
+            statusDiv.innerText = "Check connection or Firebase Rules.";
         }
     });
 </script>
