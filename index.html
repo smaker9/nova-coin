@@ -12,7 +12,6 @@
         input { padding: 15px; width: 85%; margin-top: 10px; border-radius: 8px; border: 1px solid #333; background: #000; color: #fff; text-align: center; font-size: 16px; outline: none; }
         button { padding: 18px; width: 100%; background: linear-gradient(45deg, #f39c12, #e67e22); color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; margin-top: 20px; font-size: 18px; }
         button:disabled { background: #444; cursor: not-allowed; }
-        #status { margin-top: 15px; color: #2ecc71; font-size: 14px; }
     </style>
 </head>
 <body>
@@ -24,15 +23,15 @@
     <div id="usd-value">≈ $0.00</div>
     <input type="text" id="wallet-address" placeholder="Enter Wallet Address">
     <button id="withdraw-btn">Withdraw to Wallet</button>
-    <div id="status"></div>
+    <div id="status" style="margin-top: 15px; color: #2ecc71;"></div>
 </div>
 
 <script type="module">
-    // استيراد المكتبات بشكل يضمن عمل الزر وعدم تعلقه على Processing
+    // استخدام روابط CDN لضمان عمل الزر على Vercel وعدم تعلقه
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
     import { getFirestore, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
 
-    // إعدادات مشروعك pay-coins التي قمت بنسخها
+    // إعدادات مشروعك pay-coins المنسوخة
     const firebaseConfig = {
       apiKey: "AIzaSyCDIizIvd_7nUT6B4sGIc_s-CnZ5hQECCg",
       authDomain: "pay-coins.firebaseapp.com",
@@ -47,49 +46,45 @@
     const db = getFirestore(app);
 
     let balance = 0.0000;
-    let miningActive = true;
+    let active = true;
     const counterDisplay = document.getElementById('counter');
     const usdDisplay = document.getElementById('usd-value');
     const btn = document.getElementById('withdraw-btn');
     const addressInput = document.getElementById('wallet-address');
 
-    // العداد الأصلي
     setInterval(() => {
-        if (miningActive) {
+        if (active) {
             balance += 0.0007; 
             counterDisplay.innerText = balance.toFixed(4);
             usdDisplay.innerText = "≈ $" + balance.toFixed(2);
         }
     }, 100);
 
-    // عملية السحب الأصلية
     btn.addEventListener('click', async () => {
         const wallet = addressInput.value.trim();
         if (!wallet) return;
 
-        miningActive = false; 
-        btn.innerText = "Processing..."; // الحالة التي تظهر في صورك
+        active = false;
+        btn.innerText = "Processing..."; 
         btn.disabled = true;
 
         try {
-            // الإرسال لمجموعة withdrawals
+            // الإرسال لمجموعة "withdrawals" الموجودة في Firestore لديك
             await addDoc(collection(db, "withdrawals"), {
                 address: wallet,
                 amount: counterDisplay.innerText,
                 timestamp: serverTimestamp()
             });
 
-            // رسالة النجاح التي تريد رؤيتها
             btn.innerText = "✅ Success!";
-            document.getElementById('status').innerText = "Withdrawal Confirmed!";
+            document.getElementById('status').innerText = "Sent to Cloud!";
             balance = 0;
             counterDisplay.innerText = "0.0000";
             addressInput.value = "";
-
-        } catch (error) {
-            btn.innerText = "Error - Retry";
+        } catch (e) {
+            btn.innerText = "Retry";
             btn.disabled = false;
-            miningActive = true;
+            active = true;
         }
     });
 </script>
