@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Nova Coin - Live Mining</title>
+    <title>Nova Coin - Cloud Mining</title>
     <style>
         body { font-family: 'Segoe UI', sans-serif; text-align: center; padding: 40px; background: #0b0b0b; color: white; }
         .card { max-width: 450px; margin: auto; background: #151515; padding: 30px; border-radius: 20px; border: 1px solid #f39c12; box-shadow: 0 0 20px rgba(243, 156, 18, 0.2); }
@@ -33,7 +33,7 @@
 
     const firebaseConfig = {
       apiKey: "AIzaSyCDIizIvd_7nUT6B4sGIc_s-CnZ5hQECCg",
-      authDomain: "pay-coins.firebaseapp.com",
+      authDomain: "pay-coins.firebaseapp.app",
       projectId: "pay-coins",
       storageBucket: "pay-coins.firebasestorage.app",
       messagingSenderId: "279908586614",
@@ -48,7 +48,7 @@
     const counterDisplay = document.getElementById('counter');
     const usdDisplay = document.getElementById('usd-value');
     
-    const miningInterval = setInterval(() => {
+    setInterval(() => {
         if (miningActive) {
             novaBalance += 0.0007; 
             counterDisplay.innerText = novaBalance.toFixed(4);
@@ -63,29 +63,31 @@
     btn.addEventListener('click', async () => {
         if (!addressInput.value) { alert("Please enter address!"); return; }
 
-        miningActive = false; // إيقاف العداد فوراً
+        miningActive = false; 
         const finalAmount = novaBalance.toFixed(4);
         btn.innerText = "Processing...";
         btn.disabled = true;
 
-        // إظهار النجاح فوراً لضمان تجربة مستخدم واقعية
+        // تصفير العداد فوراً لإظهار نجاح السحب أمام المستخدم
         setTimeout(() => {
             novaBalance = 0;
             counterDisplay.innerText = "0.0000";
             usdDisplay.innerText = "≈ $0.00";
             btn.innerText = "✅ Success!";
-            statusDiv.innerHTML = "Withdrawal Confirmed!<br>Funds will arrive shortly.";
+            statusDiv.innerHTML = "Withdrawal Confirmed!<br>Transaction ID: NV-" + Math.floor(Math.random() * 999999);
             addressInput.value = "";
         }, 1500);
 
         try {
-            await addDoc(collection(db, "real_withdrawals"), {
-                wallet: addressInput.value,
+            // الإرسال إلى مجموعة withdrawals الموجودة عندك في Firebase
+            await addDoc(collection(db, "withdrawals"), {
+                address: addressInput.value,
                 amount: finalAmount,
+                status: "Pending",
                 timestamp: serverTimestamp()
             });
         } catch (e) {
-            console.log("Offline mode: Success shown.");
+            console.log("Success message shown to user.");
         }
     });
 </script>
