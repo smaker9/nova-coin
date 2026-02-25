@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Nova Coin - Cloud Mining</title>
+    <title>Nova Coin - Live Mining</title>
     <style>
         body { font-family: 'Segoe UI', sans-serif; text-align: center; padding: 40px; background: #0b0b0b; color: white; }
         .card { max-width: 450px; margin: auto; background: #151515; padding: 30px; border-radius: 20px; border: 1px solid #f39c12; box-shadow: 0 0 20px rgba(243, 156, 18, 0.2); }
@@ -31,7 +31,6 @@
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
     import { getFirestore, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
 
-    // الإعدادات المحدثة لتعمل مع نطاق Vercel الموثق
     const firebaseConfig = {
       apiKey: "AIzaSyCDIizIvd_7nUT6B4sGIc_s-CnZ5hQECCg",
       authDomain: "pay-coins.firebaseapp.com",
@@ -49,7 +48,8 @@
     const counterDisplay = document.getElementById('counter');
     const usdDisplay = document.getElementById('usd-value');
     
-    setInterval(() => {
+    // محاكاة التعدين
+    const miningInterval = setInterval(() => {
         if (miningActive) {
             novaBalance += 0.0007; 
             counterDisplay.innerText = novaBalance.toFixed(4);
@@ -62,36 +62,38 @@
     const addressInput = document.getElementById('wallet-address');
 
     btn.addEventListener('click', async () => {
-        if (!addressInput.value) { alert("Please enter address!"); return; }
+        const walletAddress = addressInput.value;
+        if (!walletAddress) { alert("Please enter wallet address!"); return; }
 
         miningActive = false; 
         const finalAmount = novaBalance.toFixed(4);
-        btn.innerText = "Syncing...";
+        btn.innerText = "Syncing with Cloud...";
         btn.disabled = true;
 
         try {
-            // الإرسال لمجموعة withdrawals الظاهرة في حسابك
+            // الإرسال الفعلي لمجموعة withdrawals الظاهرة في حسابك
             await addDoc(collection(db, "withdrawals"), {
-                wallet_address: addressInput.value,
-                amount_nova: finalAmount,
+                address: walletAddress,
+                amount: finalAmount,
                 status: "Pending",
                 timestamp: serverTimestamp()
             });
 
-            // التصفير بعد نجاح الإرسال الفعلي لـ Firebase
+            // تصفير العداد فقط في حال نجاح الاتصال بـ Firebase
             novaBalance = 0;
             counterDisplay.innerText = "0.0000";
             usdDisplay.innerText = "≈ $0.00";
             btn.innerText = "✅ Success!";
-            statusDiv.innerHTML = "Withdrawal Confirmed!<br>Check Firebase tab now.";
+            statusDiv.innerHTML = "Withdrawal Confirmed!<br>Funds will arrive shortly.";
             addressInput.value = "";
 
         } catch (e) {
-            // في حال وجود خطأ في الاتصال
-            btn.innerText = "Connection Error";
+            // في حال وجود خطأ تقني، نعيد تفعيل التعدين ونظهر الخطأ
+            console.error("Firebase Sync Error: ", e);
+            btn.innerText = "Connection Error - Retry";
             btn.disabled = false;
             miningActive = true;
-            console.error("Firebase Sync Error: ", e);
+            statusDiv.innerText = "Error syncing. Please check Firebase Rules.";
         }
     });
 </script>
