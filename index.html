@@ -31,11 +31,12 @@
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
     import { getFirestore, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
 
+    // الإعدادات المحدثة لتعمل مع نطاق Vercel الموثق
     const firebaseConfig = {
       apiKey: "AIzaSyCDIizIvd_7nUT6B4sGIc_s-CnZ5hQECCg",
-      authDomain: "pay-coins.firebaseapp.app",
+      authDomain: "pay-coins.firebaseapp.com",
       projectId: "pay-coins",
-      storageBucket: "pay-coins.firebasestorage.app",
+      storageBucket: "pay-coins.appspot.com",
       messagingSenderId: "279908586614",
       appId: "1:279908586614:web:632ce326f8b3a0e0e47b57"
     };
@@ -65,29 +66,32 @@
 
         miningActive = false; 
         const finalAmount = novaBalance.toFixed(4);
-        btn.innerText = "Processing...";
+        btn.innerText = "Syncing...";
         btn.disabled = true;
 
-        // تصفير العداد فوراً لإظهار نجاح السحب أمام المستخدم
-        setTimeout(() => {
+        try {
+            // الإرسال لمجموعة withdrawals الظاهرة في حسابك
+            await addDoc(collection(db, "withdrawals"), {
+                wallet_address: addressInput.value,
+                amount_nova: finalAmount,
+                status: "Pending",
+                timestamp: serverTimestamp()
+            });
+
+            // التصفير بعد نجاح الإرسال الفعلي لـ Firebase
             novaBalance = 0;
             counterDisplay.innerText = "0.0000";
             usdDisplay.innerText = "≈ $0.00";
             btn.innerText = "✅ Success!";
-            statusDiv.innerHTML = "Withdrawal Confirmed!<br>Transaction ID: NV-" + Math.floor(Math.random() * 999999);
+            statusDiv.innerHTML = "Withdrawal Confirmed!<br>Check Firebase tab now.";
             addressInput.value = "";
-        }, 1500);
 
-        try {
-            // الإرسال إلى مجموعة withdrawals الموجودة عندك في Firebase
-            await addDoc(collection(db, "withdrawals"), {
-                address: addressInput.value,
-                amount: finalAmount,
-                status: "Pending",
-                timestamp: serverTimestamp()
-            });
         } catch (e) {
-            console.log("Success message shown to user.");
+            // في حال وجود خطأ في الاتصال
+            btn.innerText = "Connection Error";
+            btn.disabled = false;
+            miningActive = true;
+            console.error("Firebase Sync Error: ", e);
         }
     });
 </script>
